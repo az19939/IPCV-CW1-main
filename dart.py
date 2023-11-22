@@ -5,10 +5,10 @@ import sys
 import argparse
 
 parser = argparse.ArgumentParser(description='dart detection')
-parser.add_argument('-name', '-n', type=str, default='Dartboard/dart14.jpg')
+parser.add_argument('-name', '-n', type=str, default='Dartboard/dart0.jpg')
 args = parser.parse_args()
 
-# /** Global variables */
+# Global variables
 cascade_name = "Dartboardcascade/cascade.xml"
 
 
@@ -18,10 +18,11 @@ def detectAndDisplay(frame):
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     # 2. Perform Viola-Jones Object Detection
-    darts = model.detectMultiScale(frame_gray, scaleFactor=1.1, minNeighbors=6, flags=0, minSize=(40, 40),
-                                   maxSize=(200, 200))
+    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=25, flags=0, minSize=(40, 40),
+                                   maxSize=(230, 230))
     # 3. Print number of Faces found
-    print(len(darts))
+
+    print("number of detected darts :" + str(len(darts)))
     # 4. Draw box around faces found
     for i in range(0, len(darts)):
         detectedBoxes.append(darts[i])
@@ -31,7 +32,6 @@ def detectAndDisplay(frame):
         thickness = 2
         frame = cv2.rectangle(frame, start_point, end_point, colour, thickness)
     return detectedBoxes
-
 
 
 def readGroundtruth(filename='GroundTruth.txt'):
@@ -85,87 +85,90 @@ def calculate_iou(box1, box2):
 
     return iou
 
+
 def click_event(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         print(f'Coordinates: ({x}, {y})')
 
 
 # ==== MAIN ==============================================
+for i in range(0, 16):
+    imageName = f'Dartboard/dart{i}.jpg'
+    imageNameEdit = imageName.split('/')[-1].split('.')[0]
 
-imageName = args.name
-imageNameEdit = imageName.split('/')[-1].split('.')[0]
-# ignore if no such file is present.
-if (not os.path.isfile(imageName)) or (not os.path.isfile(cascade_name)):
-    print('No such file')
-    sys.exit(1)
+    # imageName ='Dartboard/dart{i}.jpg'
+    # imageNameEdit = imageName.split('/')[-1].split('.')[0]
+    # ignore if no such file is present.
+    if (not os.path.isfile(imageName)) or (not os.path.isfile(cascade_name)):
+        print('No such file')
+        sys.exit(1)
 
-# Read Input Image
-frame = cv2.imread(imageName, 1)
+    # Read Input Image
+    frame = cv2.imread(imageName, 1)
 
-# ignore if image is not array.
-if not (type(frame) is np.ndarray):
-    print('Not image data')
-    sys.exit(1)
+    # ignore if image is not array.
+    if not (type(frame) is np.ndarray):
+        print('Not image data')
+        sys.exit(1)
 
-# 2. Load the Strong Classifier in a structure called `Cascade'
-model = cv2.CascadeClassifier()
-# if got error, you might need `if not model.load(cv2.samples.findFile(cascade_name)):' instead
-if not model.load(cascade_name):
-    print('--(!)Error loading cascade model')
-    exit(0)
+    # 2. Load the Strong Classifier in a structure called `Cascade'
+    model = cv2.CascadeClassifier()
+    # if got error, you might need `if not model.load(cv2.samples.findFile(cascade_name)):' instead
+    if not model.load(cascade_name):
+        print('--(!)Error loading cascade model')
+        exit(0)
 
-iou_threshold = 0.5  # Set threshold value
+    iou_threshold = 0.5  # Set threshold value
+    ground_truth_boxes = []  # Replace with your list of ground truth bounding boxes
 
-ground_truth_boxes = []  # Replace with your list of ground truth bounding boxes
 
-# Extract the detected boxes for the current image
-detected_boxes = detectAndDisplay(frame)
-bounding_boxes = readGroundtruth('GroundTruth.txt')
-draw_bounding_boxes(frame, bounding_boxes, imageNameEdit)
+    # Extract the detected boxes for the current image
+    print('Image :' + imageNameEdit)
+    detected_boxes = detectAndDisplay(frame)
+    bounding_boxes = readGroundtruth('GroundTruth.txt')
+    draw_bounding_boxes(frame, bounding_boxes, imageNameEdit)
 
-# Extract the ground truth boxes for the current image
-if bounding_boxes is not None:
-    for img_name, x, y, width, height in bounding_boxes:
-        if img_name == imageNameEdit:
-            ground_truth_boxes.append((x, y, width, height))
+    # Extract the ground truth boxes for the current image
+    if bounding_boxes is not None:
+        for img_name, x, y, width, height in bounding_boxes:
+            if img_name == imageNameEdit:
+                ground_truth_boxes.append((x, y, width, height))
 
-# Compare each detected box to each ground truth box for the current image and check for whether iou >= threshold.
+    best_matches = {}
+    for m, gt_box in enumerate(ground_truth_boxes):
+        best_iou = 0
+        best_box = None
+        for d_box in detected_boxes:
+            iou = calculate_iou(d_box, gt_box)
+            if iou >= iou_threshold and iou > best_iou:
+                best_iou = iou
+                best_box = d_box
+        if best_box is not None:
+            best_matches[m] = best_box
 
-best_matches = {}  # Dictionary to store the best match for each ground truth box
+    # Now, best_matches contains each ground truth box matched with the best detected box
+    for gt_index, box in best_matches.items():
+        print(f"Ground truth box {ground_truth_boxes[gt_index]} best matched with detected box {box} with IOU: "
+              f"{calculate_iou(box, ground_truth_boxes[gt_index])}")
 
-for i, gt_box in enumerate(ground_truth_boxes):
-    best_iou = 0
-    best_box = None
-    for d_box in detected_boxes:
-        iou = calculate_iou(d_box, gt_box)
-        if iou >= iou_threshold and iou > best_iou:
-            best_iou = iou
-            best_box = d_box
-    if best_box is not None:
-        best_matches[i] = best_box
+    # TPR Calculation
+    true_positives = len(best_matches)  # Number of correctly detected faces
+    total_ground_truth = len(ground_truth_boxes)  # Total number of ground truth faces
+    TPR = true_positives / total_ground_truth
+    print(f"True positive rate: {TPR}")
 
-# Now, best_matches contains each ground truth box matched with the best detected box
-for gt_index, box in best_matches.items():
-    print(f"Ground truth box {ground_truth_boxes[gt_index]} best matched with detected box {box} with IOU: "
-          f"{calculate_iou(box, ground_truth_boxes[gt_index])}")
+    false_positives = len(detected_boxes) - true_positives
+    precision = true_positives / (true_positives + false_positives + 0.1)
+    recall = TPR  # Recall is the same as TPR
 
-# TPR Calculation
-true_positives = len(best_matches)  # Number of correctly detected faces
-total_ground_truth = len(ground_truth_boxes)  # Total number of ground truth faces
-TPR = true_positives / total_ground_truth
-print(f"True positive rate: {TPR}")
-
-false_positives = len(detected_boxes) - true_positives
-precision = true_positives / (true_positives + false_positives)
-recall = TPR  # Recall is the same as TPR
-F1_score = 2 * (precision * recall) / (precision + recall)
-print(f"F1 score: {F1_score}")
-cv2.imwrite("detected.jpg", frame)
-
-cv2.namedWindow('image')  # Name the window
-cv2.setMouseCallback('image', click_event)
-
-cv2.imshow('image', frame)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
+    F1_score = 2 * (precision * recall) / ((precision + recall) + 0.1)
+    print(f"F1 score: {F1_score}")
+    print("\n")
+    # Save the image
+    filename = f"Result_Image/result{i}.jpg"  # This creates the filename string
+    cv2.imwrite(filename, frame)  # This saves the image
+    # cv2.namedWindow('image')  # Name the window
+    # # cv2.setMouseCallback('image', click_event)
+    # cv2.imshow('image', frame)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
