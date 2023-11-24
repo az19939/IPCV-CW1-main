@@ -19,7 +19,7 @@ def detectAndDisplay(frame):
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     # 2. Perform Viola-Jones Object Detection
-    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=25, flags=0, minSize=(40, 40),
+    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=48, flags=0, minSize=(40, 40),
                                    maxSize=(230, 230))
     # 3. Print number of Faces found
 
@@ -155,6 +155,39 @@ def thresholdPixel(input, ts):
     return input
 
 
+def merge_close_circles(detected_circles, min_distance=20):
+    new_detected_circles = []
+    skip_indices = set()  # Used to record circles that have already been processed
+
+    for i in range(len(detected_circles)):
+        if i in skip_indices:
+            continue
+
+        current_circle = detected_circles[i]
+        overlapping_circles = []
+
+        for j in range(len(detected_circles)):
+            if i != j:
+                other_circle = detected_circles[j]
+                distance = np.sqrt((current_circle[0] - other_circle[0]) ** 2 +
+                                   (current_circle[1] - other_circle[1]) ** 2)
+
+                if distance < min_distance:
+                    overlapping_circles.append(j)
+
+        if not overlapping_circles:
+            new_detected_circles.append(current_circle)
+        else:
+            # Add the current circle to skip_indices as it overlaps with others
+            skip_indices.add(i)
+            # Add the first overlapping circle to new_detected_circles and to skip_indices
+            new_detected_circles.append(detected_circles[overlapping_circles[0]])
+            skip_indices.update(overlapping_circles)
+
+    return new_detected_circles
+
+
+
 def hough_circle_detection(gradient_magnitude, gradient_orientation, ts, th, min_radius, max_radius):
     # Step 1: Threshold the gradient magnitude image.
     thresholded_image = thresholdPixel(gradient_magnitude, ts)
@@ -191,25 +224,29 @@ def hough_circle_detection(gradient_magnitude, gradient_orientation, ts, th, min
     # Step 5: Find circle centers.
     centers = np.argwhere(thresholded_hough == 1)
     detected_circles = []
+
     for center in centers:
         detected_circles.append((center[0], center[1], center[2] + min_radius))
 
     # Step 6: Display the Hough Space.
     hough_space_sum = np.sum(hough_space, axis=2)
 
-    # Step 7: Overlay detected circles on the original image.
-    # for circle in detected_circles:
-    #     cv2.circle(frame, (circle[1], circle[0]), circle[2], (255, 0, 0), 2)
+    # Step 7: merge circles
 
-    return thresholded_image, hough_space_sum, detected_circles
+    new_detected_circles = merge_close_circles(detected_circles)
 
-
-
+    return thresholded_image, hough_space_sum, new_detected_circles
+    # return thresholded_image, hough_space_sum, detected_circles
 
 
 # ==== MAIN ==============================================
 
-for i in range(0, 16):
+
+averageTPR = 0
+averageF1 = 0
+
+for i in range(4, 16):
+
     imageName = f'Dartboard/dart{i}.jpg'
     imageNameEdit = imageName.split('/')[-1].split('.')[0]
 
@@ -271,6 +308,7 @@ for i in range(0, 16):
     true_positives = len(best_matches)  # Number of correctly detected faces
     total_ground_truth = len(ground_truth_boxes)  # Total number of ground truth faces
     TPR = true_positives / total_ground_truth
+    averageTPR += TPR
     print(f"True positive rate: {TPR}")
 
     false_positives = len(detected_boxes) - true_positives
@@ -279,17 +317,14 @@ for i in range(0, 16):
 
     # F1 score
     F1_score = 2 * (precision * recall) / ((precision + recall) + 0.1)
+    averageF1 += F1_score
     print(f"F1 score: {F1_score}")
     print("\n")
 
     resultName = f"Result_Image/result{i}.jpg"
     filenameForThreshold = f"Result_Image/thresholded_image{i}.jpg"
-
-    #cv2.imwrite(resultName, frame)
-
-
-
-
+    filenameForHough = f"Result_Image/hough_space_sum{i}.jpg"
+    # cv2.imwrite(resultName, frame)
 
     # Hough Circle Detection##############################################
     # Read Input Image from source
@@ -304,30 +339,43 @@ for i in range(0, 16):
     gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
     gradient_magnitude = gradient_mag(gray_image)
     gradient_orientation = gradient_ori(gray_image)
-    ts = 150
-    th = 15
-    min_radius = 40
-    max_radius = 240
+    ts = 100
+    th = 20
+    min_radius = 20
+    max_radius = 115
 
-    # cv2.imwrite("grayimage.jpg", gray_image)
+    thresholded_image, hough_space_sum, detectedCircles = hough_circle_detection(gradient_magnitude,
+                                                                                 gradient_orientation, ts, th,
+                                                                                 min_radius, max_radius)
 
-    # cv2.imwrite("gradient_magnitude.jpg", gradient_magnitude)
-    # cv2.imwrite("gradient_orientation.jpg", gradient_orientation)
-    thresholded_image, hough_space_sum, detectedCircles = hough_circle_detection(gradient_magnitude, gradient_orientation, ts, th,
-                                                                     min_radius, max_radius)
-
-    for circle in detectedCircles:
-      cv2.circle(frame, (circle[1], circle[0]), circle[2], (255, 0, 0), 2)
+    for circles in detectedCircles:
+        cv2.circle(frame, (circles[1], circles[0]), circles[2], (255, 0, 0), 2)
     cv2.imwrite(filenameForThreshold, thresholded_image)
-    # hough_space_sum = hough_space_sum.astype(np.uint8)
-    # cv2.imwrite("hough_space_sum.jpg", hough_space_sum)
+
+    hough_space_sum = hough_space_sum.astype(np.uint8)
+    cv2.imwrite(filenameForHough, hough_space_sum)
 
     cv2.imwrite(resultName, frame)
 
+print(f"Average TPR: {averageTPR / 16}")
+print(f"Average F1 score: {averageF1 / 16}")
 
-    # This saves the image
-    # cv2.namedWindow('image')  # Name the window
-    # # cv2.setMouseCallback('image', click_event)
-    # cv2.imshow('image', frame)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+
+
+
+
+
+
+# cv2.imwrite("grayimage.jpg", gray_image)
+
+
+# cv2.imwrite("hough_space_sum.jpg", hough_space_sum)
+
+# cv2.imwrite("gradient_magnitude.jpg", gradient_magnitude)
+# cv2.imwrite("gradient_orientation.jpg", gradient_orientation)
+# This saves the image
+# cv2.namedWindow('image')  # Name the window
+# # cv2.setMouseCallback('image', click_event)
+# cv2.imshow('image', frame)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
