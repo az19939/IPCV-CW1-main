@@ -19,7 +19,7 @@ def detectAndDisplay(frame):
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     # 2. Perform Viola-Jones Object Detection
-    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=48, flags=0, minSize=(40, 40),
+    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=100, flags=0, minSize=(40, 40),
                                    maxSize=(230, 230))
     # 3. Print number of Faces found
 
@@ -187,6 +187,40 @@ def merge_close_circles(detected_circles, min_distance=20):
     return new_detected_circles
 
 
+def merge_boxes_based_on_iou(boxes, iou_thresholdforbox=0.3):
+    merged_boxes = []
+    skip_indices1 = set()
+
+    for a in range(len(boxes)):
+        if a in skip_indices1:
+            continue
+
+        merge_with = None
+        for b in range(a + 1, len(boxes)):
+            if b in skip_indices1:
+                continue
+
+            iouForBoxes = calculate_iou(boxes[a], boxes[b])
+            if iouForBoxes > iou_thresholdforbox:
+                merge_with = b
+                break
+
+        if merge_with is not None:
+            # 计算两个框的平均位置
+            new_box = [
+                (boxes[a][0] + boxes[merge_with][0]) / 2,
+                (boxes[a][1] + boxes[merge_with][1]) / 2,
+                (boxes[a][2] + boxes[merge_with][2]) / 2,
+                (boxes[a][3] + boxes[merge_with][3]) / 2
+            ]
+            merged_boxes.append(new_box)
+            skip_indices1.add(a)
+            skip_indices1.add(merge_with)
+        else:
+            merged_boxes.append(boxes[a])
+
+    return merged_boxes
+
 
 def hough_circle_detection(gradient_magnitude, gradient_orientation, ts, th, min_radius, max_radius):
     # Step 1: Threshold the gradient magnitude image.
@@ -245,7 +279,7 @@ def hough_circle_detection(gradient_magnitude, gradient_orientation, ts, th, min
 averageTPR = 0
 averageF1 = 0
 
-for i in range(4, 16):
+for i in range(0, 16):
 
     imageName = f'Dartboard/dart{i}.jpg'
     imageNameEdit = imageName.split('/')[-1].split('.')[0]
@@ -265,27 +299,112 @@ for i in range(4, 16):
         print('Not image data')
         sys.exit(1)
 
-    # 2. Load the Strong Classifier in a structure called `Cascade'
+    # Load the Strong Classifier in a structure called `Cascade'
     model = cv2.CascadeClassifier()
     # if got error, you might need `if not model.load(cv2.samples.findFile(cascade_name)):' instead
     if not model.load(cascade_name):
         print('--(!)Error loading cascade model')
         exit(0)
 
-    iou_threshold = 0.5  # Set threshold value
     ground_truth_boxes = []  # Replace with your list of ground truth bounding boxes
 
-    # Extract the detected boxes for the current image
+    # detected boxes
     print('Image :' + imageNameEdit)
     detected_boxes = detectAndDisplay(frame)
+
+    # Read the ground truth boxes
     bounding_boxes = readGroundtruth('GroundTruth.txt')
     draw_bounding_boxes(frame, bounding_boxes, imageNameEdit)
 
-    # Extract the ground truth boxes for the current image
+    # ground truth boxes
     if bounding_boxes is not None:
         for img_name, x, y, width, height in bounding_boxes:
             if img_name == imageNameEdit:
                 ground_truth_boxes.append((x, y, width, height))
+
+    # best_matches = {}
+    # for m, gt_box in enumerate(ground_truth_boxes):
+    #     best_iou = 0
+    #     best_box = None
+    #     for d_box in detected_boxes:
+    #         iou = calculate_iou(d_box, gt_box)
+    #         if iou >= iou_threshold and iou > best_iou:
+    #             best_iou = iou
+    #             best_box = d_box
+    #     if best_box is not None:
+    #         best_matches[m] = best_box
+    #
+    # # best_matches contains each ground truth box matched with the best detected box
+    # for gt_index, box in best_matches.items():
+    #     print(f"Ground truth box {ground_truth_boxes[gt_index]} best matched with detected box {box} with IOU: "
+    #           f"{calculate_iou(box, ground_truth_boxes[gt_index])}")
+    #
+    # # TPR Calculation
+    # true_positives = len(best_matches)  # Number of correctly detected faces
+    # total_ground_truth = len(ground_truth_boxes)  # Total number of ground truth faces
+    # TPR = true_positives / total_ground_truth
+    # averageTPR += TPR
+    # print(f"True positive rate: {TPR}")
+    #
+    # false_positives = len(detected_boxes) - true_positives
+    # precision = true_positives / (true_positives + false_positives + 0.1)
+    # recall = TPR  # Recall is the same as TPR
+    #
+    # # F1 score
+    # F1_score = 2 * (precision * recall) / ((precision + recall) + 0.1)
+    # averageF1 += F1_score
+    # print(f"F1 score: {F1_score}")
+    # print("\n")
+
+    resultName = f"Result_Image/result{i}.jpg"
+    filenameForThreshold = f"Result_Image/thresholded_image{i}.jpg"
+    filenameForHough = f"Result_Image/hough_space_sum{i}.jpg"
+    # cv2.imwrite(resultName, frame)
+
+    # Hough Circle Detection##############################################
+    # Read Input Image from source
+    frame_circle = cv2.imread(imageName, 1)
+
+    if not (type(frame_circle) is np.ndarray):
+        print('Not image data')
+        sys.exit(1)
+
+    gray_image = cv2.cvtColor(frame_circle, cv2.COLOR_BGR2GRAY)
+    gray_image = gray_image.astype(np.float32)
+    gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+    gradient_magnitude = gradient_mag(gray_image)
+    gradient_orientation = gradient_ori(gray_image)
+    ts = 100
+    th = 20
+    min_radius = 20
+    max_radius = 115
+
+    thresholded_image, hough_space_sum, detectedCircles = hough_circle_detection(gradient_magnitude,
+                                                                                 gradient_orientation, ts, th,
+                                                                                 min_radius, max_radius)
+
+    # Draw circles on the frame
+    for circles in detectedCircles:
+        cv2.circle(frame, (circles[1], circles[0]), circles[2], (255, 0, 0), 2)
+
+    hough_space_sum = hough_space_sum.astype(np.uint8)
+    cv2.imwrite(filenameForHough, hough_space_sum)
+    cv2.imwrite(filenameForThreshold, thresholded_image)
+    cv2.imwrite(resultName, frame)
+
+    ###combine viola_Jones and hough circle detection##################
+    iou_threshold = 0.1  # Set threshold value for IOU
+
+    # change detectedCircle to box and put it in detected_boxes
+    for circles in detectedCircles:
+        x = circles[1] - circles[2]
+        y = circles[0] - circles[2]
+        width = circles[2] * 2
+        height = circles[2] * 2
+        detected_boxes.append((x, y, width, height))
+
+    # merge boxes
+    detected_boxes = merge_boxes_based_on_iou(detected_boxes)
 
     best_matches = {}
     for m, gt_box in enumerate(ground_truth_boxes):
@@ -321,50 +440,8 @@ for i in range(4, 16):
     print(f"F1 score: {F1_score}")
     print("\n")
 
-    resultName = f"Result_Image/result{i}.jpg"
-    filenameForThreshold = f"Result_Image/thresholded_image{i}.jpg"
-    filenameForHough = f"Result_Image/hough_space_sum{i}.jpg"
-    # cv2.imwrite(resultName, frame)
-
-    # Hough Circle Detection##############################################
-    # Read Input Image from source
-    frame_circle = cv2.imread(imageName, 1)
-
-    if not (type(frame_circle) is np.ndarray):
-        print('Not image data')
-        sys.exit(1)
-
-    gray_image = cv2.cvtColor(frame_circle, cv2.COLOR_BGR2GRAY)
-    gray_image = gray_image.astype(np.float32)
-    gray_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
-    gradient_magnitude = gradient_mag(gray_image)
-    gradient_orientation = gradient_ori(gray_image)
-    ts = 100
-    th = 20
-    min_radius = 20
-    max_radius = 115
-
-    thresholded_image, hough_space_sum, detectedCircles = hough_circle_detection(gradient_magnitude,
-                                                                                 gradient_orientation, ts, th,
-                                                                                 min_radius, max_radius)
-
-    for circles in detectedCircles:
-        cv2.circle(frame, (circles[1], circles[0]), circles[2], (255, 0, 0), 2)
-    cv2.imwrite(filenameForThreshold, thresholded_image)
-
-    hough_space_sum = hough_space_sum.astype(np.uint8)
-    cv2.imwrite(filenameForHough, hough_space_sum)
-
-    cv2.imwrite(resultName, frame)
-
 print(f"Average TPR: {averageTPR / 16}")
 print(f"Average F1 score: {averageF1 / 16}")
-
-
-
-
-
-
 
 # cv2.imwrite("grayimage.jpg", gray_image)
 

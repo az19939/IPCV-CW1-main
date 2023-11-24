@@ -19,7 +19,7 @@ def detectAndDisplay(frame):
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     # 2. Perform Viola-Jones Object Detection
-    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=48, flags=0, minSize=(40, 40),
+    darts = model.detectMultiScale(frame_gray, scaleFactor=1.01, minNeighbors=100, flags=0, minSize=(40, 40),
                                    maxSize=(230, 230))
     # 3. Print number of Faces found
 
