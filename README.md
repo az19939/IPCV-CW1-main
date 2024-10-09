@@ -5,7 +5,7 @@ Detecting (locating & classifying) instances of an object class in images is an 
 
 ## :red_circle: 1: The Dartboard Detector
 
-This subtask requires you to build an object detector that recognises dartboards. The initial steps of this subtask introduce you to OpenCV’s boosting tool, which you can use to construct an object detector that utilises Haar-like features. Training the boosted cascade of weak classifiers works with OpenCV 3.4 which requires Python 3.6. If you use Mac M1/M2, we strongly recommend you train your detector on the lab machine, and then you may transfer your model (cascade.xml) to work on your own machine.
+This subtask build an object detector that recognises dartboards. The initial steps of this subtask introduce you to OpenCV’s boosting tool, which you can use to construct an object detector that utilises Haar-like features. Training the boosted cascade of weak classifiers works with OpenCV 3.4 which requires Python 3.6. If you use Mac M1/M2, we strongly recommend you train your detector on the lab machine, and then you may transfer your model (cascade.xml) to work on your own machine.
 
 1. For the machine in Lab2.11, load conda with `module load anaconda/3-2023`. Create virtual environment with Python 3.6 `conda create -n ipcv36 python=3.6`, activate your environment `conda activate ipcv36`, and install OpenCV packages `conda install -c menpo opencv`. Check OpenCV verion with `python -c 'import cv2; print(cv2.__version__)'`. It should be 3.4.x. 
    
@@ -53,7 +53,7 @@ For Windows, you might use `YOURPATH\opencv\build\x64\vc15\bin\opencv_traincasca
 <img src="https://github.com/UoB-CS-IPCV/CW-I-Shape-Detection/blob/main/trainresult.png" height=200> 
 The boosting procedure considers all the positive images and employs sampled patches from the negative images to learn. The detector window will be 20×20. To speed up the detection process, the strong classifier is built in 3 parts (numStages) to form an attentional cascade as discussed in the Viola-Jones paper. The training procedure may take up to 5min for reasons discussed in the lectures – stop the training and restart if it exceeds this time. If the training procedure exits with "Required leaf false alarm rate achieved. Branch training terminated.", please use the lab machine in Lab2.11.
 
-### What to say in your report (roughly 1 page): 
+###
 
 a)	TRAINING PERFORMANCE: The training tool produces a strong classifier in stages. Per stage the tool adds further features to the classifier and prints the achieved TPR and FPR (false positive rate) for that point on the training data (see Figure above). 
 1. Collate this information into a graph that plots TPR and FPR on the training data for the three different stages. 
@@ -71,7 +71,7 @@ _(15 marks)_
 
 For the second subtask, use at least one Hough Transform on the query images in order to detect important shape configurations of dartboards. Feel free to use and/or adapt your implementation of the Hough Transform from former formative tasks. You must implement your own Hough transform(s). You may reuse your code from Lab 3: Coin Counter Challenge. Utilize the information (e.g. on lines, circles, ellipses) to aid dartboard detection.  Think carefully how to combine this new evidence with the output of your Viola-Jones detector in order to improve on results. Implement and evaluate this improved detector.
 
-### In report : 
+###
 
 a)	HOUGH DETAILS: Show in your report for two of the given example dartboard images which best exhibit the merit and limitations of your implementation: 
 1. The thresholded gradient magnitude image used as input to the Hough Transform, 
@@ -86,12 +86,12 @@ c)	DETECTION PIPELINE:
 1. In a flow diagram, depict how you have combined evidence from the Hough Transform(s) and Viola-Jones detector. 
 2. In bullet points, explain briefly your rationale behind the way you have combined evidence.  
 
-## :red_circle: 3: Improving Detector
+## red_circle: 3: Improving Detector
 _(10 marks)_
 
 The final subtask allows you to develop the dartboard detector further into a direction you choose. We ask you to identify and utilise some image aspects/features able to improve detection results further. This will generally include identifying, researching, understanding and using in OpenCV one other appropriate vision approach to further improve the detection efficacy and/or efficiency
 
-### In report (roughly 0.5-1 page):
+### 
 
 a)	IDEA: In bullet points, explain briefly your rationale behind selecting the approach you have taken.
 
