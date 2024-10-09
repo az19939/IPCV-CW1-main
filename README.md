@@ -1,7 +1,7 @@
 # PART I - Shape Detection
  
 ## Introduction
-Detecting (locating & classifying) instances of an object class in images is an important application in computer vision as well as an ongoing area of research. This assignment requires you 1) to experiment with the classical Viola-Jones object detection framework as discussed in the lectures and provided by OpenCV, and 2) to combine it with other detection approaches to improve its efficacy. Your approach is to be tested and evaluated on a small image set that depicts aspects of an important traffic sign – Dartboard.
+Detecting (locating & classifying) instances of an object class in images is an important application in computer vision as well as an ongoing area of research. This to experiment with the classical Viola-Jones object detection framework as discussed in the lectures and provided by OpenCV, and 2) to combine it with other detection approaches to improve its efficacy. Your approach is to be tested and evaluated on a small image set that depicts aspects of an important traffic sign – Dartboard.
 
 ## :red_circle: 1: The Dartboard Detector
 
@@ -12,10 +12,6 @@ This subtask build an object detector that recognises dartboards. The initial st
    <details>
     <summary> Python 3.6 Installation Troubleshooting </summary>
     
-     > 1. Download installer from https://www.python.org/downloads/release/python-368/
-     > 2. Create virtual environment with `python3.6 -m venv ipcv36` (if doesn't work, try `python3 -m venv ipcv36`), then activate your environment `source ipcv36/bin/activate`
-   </details>
-
    <details>
    <summary> OpenCV 3.4 for Windows Troubleshooting </summary>
     
@@ -67,7 +63,6 @@ b)	TESTING PERFORMANCE: In face.py from Lab4, change "frontalface.xml" to "Dartb
 5. Give reasons for the different TPR values compared to the performance achieved in a).
 
 ## :red_circle: 2: Integration with Shape Detectors
-_(15 marks)_
 
 For the second subtask, use at least one Hough Transform on the query images in order to detect important shape configurations of dartboards. Feel free to use and/or adapt your implementation of the Hough Transform from former formative tasks. You must implement your own Hough transform(s). You may reuse your code from Lab 3: Coin Counter Challenge. Utilize the information (e.g. on lines, circles, ellipses) to aid dartboard detection.  Think carefully how to combine this new evidence with the output of your Viola-Jones detector in order to improve on results. Implement and evaluate this improved detector.
 
@@ -87,7 +82,6 @@ c)	DETECTION PIPELINE:
 2. In bullet points, explain briefly your rationale behind the way you have combined evidence.  
 
 ## red_circle: 3: Improving Detector
-_(10 marks)_
 
 The final subtask allows you to develop the dartboard detector further into a direction you choose. We ask you to identify and utilise some image aspects/features able to improve detection results further. This will generally include identifying, researching, understanding and using in OpenCV one other appropriate vision approach to further improve the detection efficacy and/or efficiency
 
@@ -96,5 +90,3 @@ The final subtask allows you to develop the dartboard detector further into a di
 a)	IDEA: In bullet points, explain briefly your rationale behind selecting the approach you have taken.
 
 b)	VISUALISE: Visualise important aspects of your technique in two of the given example images of dartboards selected to best exhibit the merit of your approach. 
-
-c)	EVALUATE: Evaluate your final detector on all of the example images, show the improvements in TPR and F1-score compared to previous approaches. Briefly note in bullet points the key merits and shortcomings of your final implementation.
