@@ -1,21 +1,9 @@
-# Coursework PART I - Shape Detection
-
-> This part of the coursework requires [Python 3.6](https://www.python.org/downloads/).
-> For Windows, you might want to use [Conda](https://www.anaconda.com/products/distribution). 
-
-## Marking Scheme 
-This part is worth 50% of the CW mark for the unit. Marks will be allocated as follows. For subtasks 1-3, marks will be based on the content of the report w.r.t description, analysis and evaluation and on the code.
-1. Subtask 1: The Dartboard Detector - 15%
-2. Subtask 2: Integration with Shape Detectors - 15%
-3. Subtask 3: Improving your Detector - 10%
-4. Overall standard of presentation, analysis and evaluation - 10%
-
+# PART I - Shape Detection
  
 ## Introduction
 Detecting (locating & classifying) instances of an object class in images is an important application in computer vision as well as an ongoing area of research. This assignment requires you 1) to experiment with the classical Viola-Jones object detection framework as discussed in the lectures and provided by OpenCV, and 2) to combine it with other detection approaches to improve its efficacy. Your approach is to be tested and evaluated on a small image set that depicts aspects of an important traffic sign – Dartboard.
 
-## :red_circle: Subtask 1: The Dartboard Detector
-_(15 marks)_
+## :red_circle: 1: The Dartboard Detector
 
 This subtask requires you to build an object detector that recognises dartboards. The initial steps of this subtask introduce you to OpenCV’s boosting tool, which you can use to construct an object detector that utilises Haar-like features. Training the boosted cascade of weak classifiers works with OpenCV 3.4 which requires Python 3.6. If you use Mac M1/M2, we strongly recommend you train your detector on the lab machine, and then you may transfer your model (cascade.xml) to work on your own machine.
 
@@ -78,12 +66,12 @@ b)	TESTING PERFORMANCE: In face.py from Lab4, change "frontalface.xml" to "Dartb
 4. Briefly discuss the performance achieved.
 5. Give reasons for the different TPR values compared to the performance achieved in a).
 
-## :red_circle: Subtask 2: Integration with Shape Detectors
+## :red_circle: 2: Integration with Shape Detectors
 _(15 marks)_
 
 For the second subtask, use at least one Hough Transform on the query images in order to detect important shape configurations of dartboards. Feel free to use and/or adapt your implementation of the Hough Transform from former formative tasks. You must implement your own Hough transform(s). You may reuse your code from Lab 3: Coin Counter Challenge. Utilize the information (e.g. on lines, circles, ellipses) to aid dartboard detection.  Think carefully how to combine this new evidence with the output of your Viola-Jones detector in order to improve on results. Implement and evaluate this improved detector.
 
-### What to say in your report (roughly 1 page): 
+### In report : 
 
 a)	HOUGH DETAILS: Show in your report for two of the given example dartboard images which best exhibit the merit and limitations of your implementation: 
 1. The thresholded gradient magnitude image used as input to the Hough Transform, 
@@ -98,19 +86,15 @@ c)	DETECTION PIPELINE:
 1. In a flow diagram, depict how you have combined evidence from the Hough Transform(s) and Viola-Jones detector. 
 2. In bullet points, explain briefly your rationale behind the way you have combined evidence.  
 
-## :red_circle: Subtask 3: Improving your Detector
+## :red_circle: 3: Improving Detector
 _(10 marks)_
 
 The final subtask allows you to develop the dartboard detector further into a direction you choose. We ask you to identify and utilise some image aspects/features able to improve detection results further. This will generally include identifying, researching, understanding and using in OpenCV one other appropriate vision approach to further improve the detection efficacy and/or efficiency
 
-### What to say in your report (roughly 0.5-1 page):
+### In report (roughly 0.5-1 page):
 
 a)	IDEA: In bullet points, explain briefly your rationale behind selecting the approach you have taken.
 
 b)	VISUALISE: Visualise important aspects of your technique in two of the given example images of dartboards selected to best exhibit the merit of your approach. 
 
 c)	EVALUATE: Evaluate your final detector on all of the example images, show the improvements in TPR and F1-score compared to previous approaches. Briefly note in bullet points the key merits and shortcomings of your final implementation.
-
-## :red_circle: Notes on Your Submission for Part 1
-
-Include your source code and your maximum 3-page PDF report, and if needed, include a readme.txt to explain how to compile/build. Your final detector program should take one parameter, that is the input image filename, and produce at least an image `detected.jpg`, which highlights detected dartboards by bounding boxes. You can use your own machines or lab machines to develop your program, but please test that it runs on the lab machines seamlessly when it comes to marking. Make sure you regularly save/backup your work and monitor your workload throughout the duration of the project
